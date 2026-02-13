@@ -52,6 +52,7 @@ func printHelp(w io.Writer) {
 	fmt.Fprintln(w, "  check                Run template mode")
 	fmt.Fprintln(w, "  check help           Show help")
 	fmt.Fprintln(w, "  check init [flags] [path]")
+	fmt.Fprintln(w, "    -f, --force        Overwrite existing file in init mode")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Environment:")
 	fmt.Fprintln(w, "  CHECK_FILE           Path to template file for template mode")
@@ -116,8 +117,11 @@ func writeTemplateFile(path, content string, force bool) error {
 		}
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
+	dir := filepath.Dir(path)
+	if dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return err
+		}
 	}
 
 	return os.WriteFile(path, []byte(content), 0o644)
@@ -125,6 +129,7 @@ func writeTemplateFile(path, content string, force bool) error {
 
 func processTemplate(input string) (string, int) {
 	withoutComments := stripHTMLComments(input)
+	hadTrailingNewline := strings.HasSuffix(withoutComments, "\n")
 	status := 0
 	var outLines []string
 	scanner := bufio.NewScanner(strings.NewReader(withoutComments))
@@ -136,14 +141,18 @@ func processTemplate(input string) (string, int) {
 			if len(parts) == 2 {
 				if code, err := strconv.Atoi(parts[1]); err == nil {
 					status = code
-					continue
 				}
 			}
+			continue
 		}
 		outLines = append(outLines, line)
 	}
 
-	return strings.Join(outLines, "\n"), status
+	output := strings.Join(outLines, "\n")
+	if hadTrailingNewline {
+		output += "\n"
+	}
+	return output, status
 }
 
 func stripHTMLComments(s string) string {
@@ -154,7 +163,7 @@ func stripHTMLComments(s string) string {
 		}
 		end := strings.Index(s[start+4:], "-->")
 		if end == -1 {
-			return s[:start]
+			return s
 		}
 		s = s[:start] + s[start+4+end+3:]
 	}

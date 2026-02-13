@@ -22,9 +22,40 @@ func TestProcessTemplate_StripsCommentsAndStatus(t *testing.T) {
 	}
 }
 
+func TestProcessTemplate_InvalidStatusIsNotPrinted(t *testing.T) {
+	in := "text\n@status abc\n"
+	out, code := processTemplate(in)
+	if code != 0 {
+		t.Fatalf("expected default status 0, got %d", code)
+	}
+	if strings.Contains(out, "@status") {
+		t.Fatalf("status directive should not be printed: %q", out)
+	}
+}
+
+func TestProcessTemplate_UnclosedCommentIsPreserved(t *testing.T) {
+	in := "text\n<!-- broken\nnext"
+	out, code := processTemplate(in)
+	if code != 0 {
+		t.Fatalf("expected default status 0, got %d", code)
+	}
+	if !strings.Contains(out, "<!-- broken") {
+		t.Fatalf("expected malformed comment to be preserved: %q", out)
+	}
+}
+
+func TestProcessTemplate_PreservesTrailingNewline(t *testing.T) {
+	out, _ := processTemplate("line\n")
+	if !strings.HasSuffix(out, "\n") {
+		t.Fatalf("expected trailing newline to be preserved: %q", out)
+	}
+}
+
 func TestRunInit_DefaultPathFromTempDir(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("TMPDIR", tmp)
+	t.Setenv("TMP", tmp)
+	t.Setenv("TEMP", tmp)
 
 	if err := runInit(nil, ioDiscard{}, ioDiscard{}); err != nil {
 		t.Fatalf("runInit failed: %v", err)
