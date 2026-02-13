@@ -27,7 +27,7 @@ Clone the repository and build locally:
 ```bash
 git clone https://github.com/microshine/checker.git
 cd checker
-go build -o check .
+go build -o checker .
 ```
 
 ## Usage
@@ -37,7 +37,7 @@ go build -o check .
 Run without arguments to process a template file:
 
 ```bash
-check
+checker
 ```
 
 By default, it looks for `.check.md` in the temp directory, or set `CHECK_FILE` environment variable.
@@ -47,7 +47,7 @@ By default, it looks for `.check.md` in the temp directory, or set `CHECK_FILE` 
 Create a new template file:
 
 ```bash
-check init [path]
+checker init [path]
 ```
 
 Options:
@@ -56,7 +56,7 @@ Options:
 ### Help
 
 ```bash
-check help
+checker help
 ```
 
 ## Template Format
