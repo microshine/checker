@@ -20,6 +20,12 @@ To install the tool globally:
 go install github.com/microshine/checker@latest
 ```
 
+For the latest development version:
+
+```bash
+go install github.com/microshine/checker@main
+```
+
 ### Local Build
 
 Clone the repository and build locally:
