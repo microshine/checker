@@ -31,8 +31,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 			}
 			return 0
 		default:
-			fmt.Fprintln(stderr, "positional arguments are not supported")
-			return 1
+			exitCode, output, err := runTemplateMode()
+			if err != nil {
+				fmt.Fprintln(stderr, err)
+				return 1
+			}
+			fmt.Fprint(stdout, output)
+			return exitCode
 		}
 	}
 
@@ -128,6 +133,10 @@ func writeTemplateFile(path, content string, force bool) error {
 }
 
 func processTemplate(input string) (string, int) {
+	// Remove UTF-8 BOM if present
+	if strings.HasPrefix(input, "\xef\xbb\xbf") {
+		input = input[3:]
+	}
 	withoutComments := stripHTMLComments(input)
 	hadTrailingNewline := strings.HasSuffix(withoutComments, "\n")
 	status := 0
