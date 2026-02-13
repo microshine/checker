@@ -13,6 +13,7 @@ import (
 )
 
 const defaultFileName = ".check.md"
+const version = "1.1.0"
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
@@ -23,6 +24,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 		switch args[0] {
 		case "help", "-h", "--help":
 			printHelp(stdout)
+			return 0
+		case "version", "-v", "--version":
+			fmt.Fprintln(stdout, version)
 			return 0
 		case "init":
 			if err := runInit(args[1:], stdout, stderr); err != nil {
@@ -56,6 +60,7 @@ func printHelp(w io.Writer) {
 	fmt.Fprintln(w, "Usage:")
 	fmt.Fprintln(w, "  check                Run template mode")
 	fmt.Fprintln(w, "  check help           Show help")
+	fmt.Fprintln(w, "  check version        Show version")
 	fmt.Fprintln(w, "  check init [flags] [path]")
 	fmt.Fprintln(w, "    -f, --force        Overwrite existing file in init mode")
 	fmt.Fprintln(w)
