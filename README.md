@@ -34,13 +34,13 @@ go build -o checker .
 
 ### Template Mode
 
-Run without arguments to process a template file:
+Run template mode to process a template file:
 
 ```bash
-checker
+checker [path]
 ```
 
-By default, it looks for `.check.md` in the temp directory, or set `CHECK_FILE` environment variable.
+By default, it looks for `.check.md` in the temp directory, or set `CHECK_FILE` environment variable, or specify path as argument.
 
 ### Init Mode
 
