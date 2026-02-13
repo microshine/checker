@@ -17,7 +17,7 @@ A simple CLI tool for processing markdown templates and returning exit status co
 To install the tool globally:
 
 ```bash
-go install microshine/checker@latest
+go install github.com/microshine/checker@latest
 ```
 
 ### Local Build
