@@ -26,51 +26,51 @@ func run(args []string, stdout, stderr io.Writer) int {
 			printHelp(stdout)
 			return 0
 		case "version", "-v", "--version":
-			fmt.Fprintln(stdout, version)
+			_, _ = fmt.Fprintln(stdout, version)
 			return 0
 		case "init":
 			if err := runInit(args[1:], stdout, stderr); err != nil {
-				fmt.Fprintln(stderr, err)
+				_, _ = fmt.Fprintln(stderr, err)
 				return 1
 			}
 			return 0
 		default:
 			exitCode, output, err := runTemplateMode()
 			if err != nil {
-				fmt.Fprintln(stderr, err)
+				_, _ = fmt.Fprintln(stderr, err)
 				return 1
 			}
-			fmt.Fprint(stdout, output)
+			_, _ = fmt.Fprint(stdout, output)
 			return exitCode
 		}
 	}
 
 	exitCode, output, err := runTemplateMode()
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
-	fmt.Fprint(stdout, output)
+	_, _ = fmt.Fprint(stdout, output)
 	return exitCode
 }
 
 func printHelp(w io.Writer) {
-	fmt.Fprintln(w, "checker - process markdown template and return exit status")
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Usage:")
-	fmt.Fprintln(w, "  checker                Run template mode")
-	fmt.Fprintln(w, "  checker help           Show help")
-	fmt.Fprintln(w, "  checker version        Show version")
-	fmt.Fprintln(w, "  checker init [flags] [path]")
-	fmt.Fprintln(w, "    -f, --force        Overwrite existing file in init mode")
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Environment:")
-	fmt.Fprintln(w, "  CHECK_FILE           Path to template file for template mode")
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Template format:")
-	fmt.Fprintln(w, "  - Markdown file treated as plain text")
-	fmt.Fprintln(w, "  - HTML comments <!-- ... --> are ignored")
-	fmt.Fprintln(w, "  - Optional directive: @status <code>")
+	_, _ = fmt.Fprintln(w, "checker - process markdown template and return exit status")
+	_, _ = fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "Usage:")
+	_, _ = fmt.Fprintln(w, "  checker                Run template mode")
+	_, _ = fmt.Fprintln(w, "  checker help           Show help")
+	_, _ = fmt.Fprintln(w, "  checker version        Show version")
+	_, _ = fmt.Fprintln(w, "  checker init [flags] [path]")
+	_, _ = fmt.Fprintln(w, "    -f, --force        Overwrite existing file in init mode")
+	_, _ = fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "Environment:")
+	_, _ = fmt.Fprintln(w, "  CHECK_FILE           Path to template file for template mode")
+	_, _ = fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "Template format:")
+	_, _ = fmt.Fprintln(w, "  - Markdown file treated as plain text")
+	_, _ = fmt.Fprintln(w, "  - HTML comments <!-- ... --> are ignored")
+	_, _ = fmt.Fprintln(w, "  - Optional directive: @status <code>")
 }
 
 func runInit(args []string, stdout, _ io.Writer) error {
@@ -95,7 +95,7 @@ func runInit(args []string, stdout, _ io.Writer) error {
 		return err
 	}
 
-	fmt.Fprintln(stdout, path)
+	_, _ = fmt.Fprintln(stdout, path)
 	return nil
 }
 
@@ -139,9 +139,7 @@ func writeTemplateFile(path, content string, force bool) error {
 
 func processTemplate(input string) (string, int) {
 	// Remove UTF-8 BOM if present
-	if strings.HasPrefix(input, "\xef\xbb\xbf") {
-		input = input[3:]
-	}
+	input = strings.TrimPrefix(input, "\xef\xbb\xbf")
 	withoutComments := stripHTMLComments(input)
 	hadTrailingNewline := strings.HasSuffix(withoutComments, "\n")
 	status := 0
