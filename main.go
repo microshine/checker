@@ -55,13 +55,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 }
 
 func printHelp(w io.Writer) {
-	fmt.Fprintln(w, "check - process markdown template and return exit status")
+	fmt.Fprintln(w, "checker - process markdown template and return exit status")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Usage:")
-	fmt.Fprintln(w, "  check                Run template mode")
-	fmt.Fprintln(w, "  check help           Show help")
-	fmt.Fprintln(w, "  check version        Show version")
-	fmt.Fprintln(w, "  check init [flags] [path]")
+	fmt.Fprintln(w, "  checker                Run template mode")
+	fmt.Fprintln(w, "  checker help           Show help")
+	fmt.Fprintln(w, "  checker version        Show version")
+	fmt.Fprintln(w, "  checker init [flags] [path]")
 	fmt.Fprintln(w, "    -f, --force        Overwrite existing file in init mode")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Environment:")
