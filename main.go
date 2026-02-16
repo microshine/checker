@@ -141,7 +141,7 @@ func processTemplate(input string) (string, int) {
 	// Remove UTF-8 BOM if present
 	input = strings.TrimPrefix(input, "\xef\xbb\xbf")
 	withoutComments := stripHTMLComments(input)
-	hadTrailingNewline := strings.HasSuffix(withoutComments, "\n")
+
 	status := 0
 	var outLines []string
 	scanner := bufio.NewScanner(strings.NewReader(withoutComments))
@@ -160,10 +160,38 @@ func processTemplate(input string) (string, int) {
 		outLines = append(outLines, line)
 	}
 
-	output := strings.Join(outLines, "\n")
-	if hadTrailingNewline {
-		output += "\n"
+	// Trim leading and trailing blank lines
+	start := 0
+	for start < len(outLines) && strings.TrimSpace(outLines[start]) == "" {
+		start++
 	}
+	end := len(outLines) - 1
+	for end >= start && strings.TrimSpace(outLines[end]) == "" {
+		end--
+	}
+	if start > end {
+		return "", status
+	}
+	filtered := outLines[start : end+1]
+
+	// Collapse consecutive blank lines to a single blank line
+	var resultLines []string
+	prevBlank := false
+	for _, l := range filtered {
+		isBlank := strings.TrimSpace(l) == ""
+		if isBlank {
+			if prevBlank {
+				continue
+			}
+			prevBlank = true
+			resultLines = append(resultLines, "")
+			continue
+		}
+		prevBlank = false
+		resultLines = append(resultLines, l)
+	}
+
+	output := strings.Join(resultLines, "\n")
 	return output, status
 }
 

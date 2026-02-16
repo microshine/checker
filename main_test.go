@@ -44,10 +44,24 @@ func TestProcessTemplate_UnclosedCommentIsPreserved(t *testing.T) {
 	}
 }
 
-func TestProcessTemplate_PreservesTrailingNewline(t *testing.T) {
-	out, _ := processTemplate("line\n")
-	if !strings.HasSuffix(out, "\n") {
-		t.Fatalf("expected trailing newline to be preserved: %q", out)
+func TestProcessTemplate_RemovesSurroundingBlankLines(t *testing.T) {
+	out, _ := processTemplate("\n\nline\n\n")
+	if strings.HasPrefix(out, "\n") || strings.HasSuffix(out, "\n") {
+		t.Fatalf("expected no leading/trailing newlines: %q", out)
+	}
+	if out != "line" {
+		t.Fatalf("unexpected output: %q", out)
+	}
+}
+
+func TestProcessTemplate_CollapsesDuplicateBlankLines(t *testing.T) {
+	in := "a\n\n\n\nb\n\n\nc"
+	out, _ := processTemplate(in)
+	if strings.Contains(out, "\n\n\n") {
+		t.Fatalf("expected no multiple blank lines: %q", out)
+	}
+	if !strings.Contains(out, "a\n\nb") || !strings.Contains(out, "b\n\nc") {
+		t.Fatalf("expected single blank lines between paragraphs: %q", out)
 	}
 }
 
