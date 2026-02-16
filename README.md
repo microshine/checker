@@ -57,6 +57,7 @@ checker init [path]
 ```
 
 Options:
+
 - `-f, --force`: Overwrite existing file
 
 ### Help
