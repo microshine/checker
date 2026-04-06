@@ -37,3 +37,11 @@ Use these rules when generating commit summaries or when proposing a Git commit 
 When generating a commit message, follow the repository pattern exactly.
 If the change is minor and self-explanatory, keep only the subject.
 If the change is more complex, add a short body separated by a blank line.
+
+## Publish a release
+
+- Create a new tag when the code is ready for release.
+- Use semantic versioning and bump only the patch version for bug fixes and small improvements.
+- Update the version constant in `main.go` to match the release tag before publishing.
+- After tagging, push both the branch and the tag to `origin`.
+- Verify `go test ./...` passes before publishing.
