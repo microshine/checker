@@ -13,7 +13,7 @@ import (
 )
 
 const defaultFileName = ".check.md"
-const version = "1.1.1"
+const version = "1.2.0"
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
@@ -35,42 +35,33 @@ func run(args []string, stdout, stderr io.Writer) int {
 			}
 			return 0
 		default:
-			exitCode, output, err := runTemplateMode()
+			exitCode, out, errOut, err := runTemplateMode()
 			if err != nil {
 				_, _ = fmt.Fprintln(stderr, err)
 				return 1
 			}
-			_, _ = fmt.Fprint(stdout, output)
+			if out != "" {
+				_, _ = fmt.Fprint(stdout, out)
+			}
+			if errOut != "" {
+				_, _ = fmt.Fprint(stderr, errOut)
+			}
 			return exitCode
 		}
 	}
 
-	exitCode, output, err := runTemplateMode()
+	exitCode, out, errOut, err := runTemplateMode()
 	if err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
-	_, _ = fmt.Fprint(stdout, output)
+	if out != "" {
+		_, _ = fmt.Fprint(stdout, out)
+	}
+	if errOut != "" {
+		_, _ = fmt.Fprint(stderr, errOut)
+	}
 	return exitCode
-}
-
-func printHelp(w io.Writer) {
-	_, _ = fmt.Fprintln(w, "checker - process markdown template and return exit status")
-	_, _ = fmt.Fprintln(w)
-	_, _ = fmt.Fprintln(w, "Usage:")
-	_, _ = fmt.Fprintln(w, "  checker                Run template mode")
-	_, _ = fmt.Fprintln(w, "  checker help           Show help")
-	_, _ = fmt.Fprintln(w, "  checker version        Show version")
-	_, _ = fmt.Fprintln(w, "  checker init [flags] [path]")
-	_, _ = fmt.Fprintln(w, "    -f, --force        Overwrite existing file in init mode")
-	_, _ = fmt.Fprintln(w)
-	_, _ = fmt.Fprintln(w, "Environment:")
-	_, _ = fmt.Fprintln(w, "  CHECK_FILE           Path to template file for template mode")
-	_, _ = fmt.Fprintln(w)
-	_, _ = fmt.Fprintln(w, "Template format:")
-	_, _ = fmt.Fprintln(w, "  - Markdown file treated as plain text")
-	_, _ = fmt.Fprintln(w, "  - HTML comments <!-- ... --> are ignored")
-	_, _ = fmt.Fprintln(w, "  - Optional directive: @status <code>")
 }
 
 func runInit(args []string, stdout, _ io.Writer) error {
@@ -90,7 +81,18 @@ func runInit(args []string, stdout, _ io.Writer) error {
 		path = fs.Arg(0)
 	}
 
-	content := "<!-- check template -->\n# check\n\n@status 0\n"
+	content := "<!-- checker template example:\n" +
+		"@status 0           # define exit status\n" +
+		"@stdout            # following text will be written to stdout\n" +
+		"This text goes to stdout.\n" +
+		"@stderr            # following text will be written to stderr\n" +
+		"This text goes to stderr.\n" +
+		"@stdout            # back to stdout\n" +
+		"More stdout text.\n" +
+		"-->\n" +
+		"@status 0\n" +
+		"# check\n\n" +
+		"This is a simple stdout message.\n"
 	if err := writeTemplateFile(path, content, *force); err != nil {
 		return err
 	}
@@ -99,7 +101,7 @@ func runInit(args []string, stdout, _ io.Writer) error {
 	return nil
 }
 
-func runTemplateMode() (int, string, error) {
+func runTemplateMode() (int, string, string, error) {
 	path := os.Getenv("CHECK_FILE")
 	if path == "" {
 		path = defaultTemplatePath()
@@ -107,11 +109,30 @@ func runTemplateMode() (int, string, error) {
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return 0, "", fmt.Errorf("failed to read template %q: %w", path, err)
+		return 0, "", "", fmt.Errorf("failed to read template %q: %w", path, err)
 	}
 
-	output, status := processTemplate(string(data))
-	return status, output, nil
+	stdoutOutput, stderrOutput, status := processTemplate(string(data))
+	return status, stdoutOutput, stderrOutput, nil
+}
+
+func printHelp(w io.Writer) {
+	_, _ = fmt.Fprintln(w, "checker - process markdown template and return exit status")
+	_, _ = fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "Usage:")
+	_, _ = fmt.Fprintln(w, "  checker                Run template mode")
+	_, _ = fmt.Fprintln(w, "  checker help           Show help")
+	_, _ = fmt.Fprintln(w, "  checker version        Show version")
+	_, _ = fmt.Fprintln(w, "  checker init [flags] [path]")
+	_, _ = fmt.Fprintln(w, "    -f, --force        Overwrite existing file in init mode")
+	_, _ = fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "Environment:")
+	_, _ = fmt.Fprintln(w, "  CHECK_FILE           Path to template file for template mode")
+	_, _ = fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "Template format:")
+	_, _ = fmt.Fprintln(w, "  - Markdown file treated as plain text")
+	_, _ = fmt.Fprintln(w, "  - HTML comments <!-- ... --> are ignored")
+	_, _ = fmt.Fprintln(w, "  - Optional directives: @status <code>, @stdout, @stderr")
 }
 
 func defaultTemplatePath() string {
@@ -137,13 +158,16 @@ func writeTemplateFile(path, content string, force bool) error {
 	return os.WriteFile(path, []byte(content), 0o644)
 }
 
-func processTemplate(input string) (string, int) {
+func processTemplate(input string) (string, string, int) {
 	// Remove UTF-8 BOM if present
 	input = strings.TrimPrefix(input, "\xef\xbb\xbf")
 	withoutComments := stripHTMLComments(input)
 
 	status := 0
-	var outLines []string
+	stdoutLines := []string{}
+	stderrLines := []string{}
+	current := &stdoutLines
+
 	scanner := bufio.NewScanner(strings.NewReader(withoutComments))
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -157,22 +181,34 @@ func processTemplate(input string) (string, int) {
 			}
 			continue
 		}
-		outLines = append(outLines, line)
+		switch trimmed {
+		case "@stdout":
+			current = &stdoutLines
+			continue
+		case "@stderr":
+			current = &stderrLines
+			continue
+		}
+		*current = append(*current, line)
 	}
 
+	return normalizeOutput(stdoutLines), normalizeOutput(stderrLines), status
+}
+
+func normalizeOutput(lines []string) string {
 	// Trim leading and trailing blank lines
 	start := 0
-	for start < len(outLines) && strings.TrimSpace(outLines[start]) == "" {
+	for start < len(lines) && strings.TrimSpace(lines[start]) == "" {
 		start++
 	}
-	end := len(outLines) - 1
-	for end >= start && strings.TrimSpace(outLines[end]) == "" {
+	end := len(lines) - 1
+	for end >= start && strings.TrimSpace(lines[end]) == "" {
 		end--
 	}
 	if start > end {
-		return "", status
+		return ""
 	}
-	filtered := outLines[start : end+1]
+	filtered := lines[start : end+1]
 
 	// Collapse consecutive blank lines to a single blank line
 	var resultLines []string
@@ -191,8 +227,7 @@ func processTemplate(input string) (string, int) {
 		resultLines = append(resultLines, l)
 	}
 
-	output := strings.Join(resultLines, "\n")
-	return output, status
+	return strings.Join(resultLines, "\n")
 }
 
 func stripHTMLComments(s string) string {

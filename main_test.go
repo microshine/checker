@@ -9,59 +9,102 @@ import (
 
 func TestProcessTemplate_StripsCommentsAndStatus(t *testing.T) {
 	in := "start\n<!-- hidden\nline -->\nvisible\n@status 7\n"
-	out, code := processTemplate(in)
+	stdout, stderr, code := processTemplate(in)
 
 	if code != 7 {
 		t.Fatalf("expected status 7, got %d", code)
 	}
-	if strings.Contains(out, "hidden") || strings.Contains(out, "@status") {
-		t.Fatalf("unexpected output: %q", out)
+	if stderr != "" {
+		t.Fatalf("expected no stderr output, got: %q", stderr)
 	}
-	if !strings.Contains(out, "visible") {
-		t.Fatalf("expected visible text in output: %q", out)
+	if strings.Contains(stdout, "hidden") || strings.Contains(stdout, "@status") {
+		t.Fatalf("unexpected output: %q", stdout)
+	}
+	if !strings.Contains(stdout, "visible") {
+		t.Fatalf("expected visible text in output: %q", stdout)
 	}
 }
 
 func TestProcessTemplate_InvalidStatusIsNotPrinted(t *testing.T) {
 	in := "text\n@status abc\n"
-	out, code := processTemplate(in)
+	stdout, stderr, code := processTemplate(in)
 	if code != 0 {
 		t.Fatalf("expected default status 0, got %d", code)
 	}
-	if strings.Contains(out, "@status") {
-		t.Fatalf("status directive should not be printed: %q", out)
+	if stderr != "" {
+		t.Fatalf("expected no stderr output, got: %q", stderr)
+	}
+	if strings.Contains(stdout, "@status") {
+		t.Fatalf("status directive should not be printed: %q", stdout)
 	}
 }
 
 func TestProcessTemplate_UnclosedCommentIsPreserved(t *testing.T) {
 	in := "text\n<!-- broken\nnext"
-	out, code := processTemplate(in)
+	stdout, stderr, code := processTemplate(in)
 	if code != 0 {
 		t.Fatalf("expected default status 0, got %d", code)
 	}
-	if !strings.Contains(out, "<!-- broken") {
-		t.Fatalf("expected malformed comment to be preserved: %q", out)
+	if stderr != "" {
+		t.Fatalf("expected no stderr output, got: %q", stderr)
+	}
+	if !strings.Contains(stdout, "<!-- broken") {
+		t.Fatalf("expected malformed comment to be preserved: %q", stdout)
 	}
 }
 
 func TestProcessTemplate_RemovesSurroundingBlankLines(t *testing.T) {
-	out, _ := processTemplate("\n\nline\n\n")
-	if strings.HasPrefix(out, "\n") || strings.HasSuffix(out, "\n") {
-		t.Fatalf("expected no leading/trailing newlines: %q", out)
+	stdout, stderr, _ := processTemplate("\n\nline\n\n")
+	if stderr != "" {
+		t.Fatalf("expected no stderr output, got: %q", stderr)
 	}
-	if out != "line" {
-		t.Fatalf("unexpected output: %q", out)
+	if strings.HasPrefix(stdout, "\n") || strings.HasSuffix(stdout, "\n") {
+		t.Fatalf("expected no leading/trailing newlines: %q", stdout)
+	}
+	if stdout != "line" {
+		t.Fatalf("unexpected output: %q", stdout)
 	}
 }
 
 func TestProcessTemplate_CollapsesDuplicateBlankLines(t *testing.T) {
 	in := "a\n\n\n\nb\n\n\nc"
-	out, _ := processTemplate(in)
-	if strings.Contains(out, "\n\n\n") {
-		t.Fatalf("expected no multiple blank lines: %q", out)
+	stdout, stderr, _ := processTemplate(in)
+	if stderr != "" {
+		t.Fatalf("expected no stderr output, got: %q", stderr)
 	}
-	if !strings.Contains(out, "a\n\nb") || !strings.Contains(out, "b\n\nc") {
-		t.Fatalf("expected single blank lines between paragraphs: %q", out)
+	if strings.Contains(stdout, "\n\n\n") {
+		t.Fatalf("expected no multiple blank lines: %q", stdout)
+	}
+	if !strings.Contains(stdout, "a\n\nb") || !strings.Contains(stdout, "b\n\nc") {
+		t.Fatalf("expected single blank lines between paragraphs: %q", stdout)
+	}
+}
+
+func TestProcessTemplate_RoutesTextToStderr(t *testing.T) {
+	in := "a\n@stderr\nerr\n@stdout\nb\n"
+	stdout, stderr, code := processTemplate(in)
+	if code != 0 {
+		t.Fatalf("expected status 0, got %d", code)
+	}
+	if stdout != "a\nb" {
+		t.Fatalf("unexpected stdout: %q", stdout)
+	}
+	if stderr != "err" {
+		t.Fatalf("unexpected stderr: %q", stderr)
+	}
+}
+
+func TestProcessTemplate_RepeatsMarkers(t *testing.T) {
+	in := "@stderr\nerr1\n@stdout\nok\n@stderr\nerr2\n"
+	stdout, stderr, code := processTemplate(in)
+	if code != 0 {
+		t.Fatalf("expected status 0, got %d", code)
+	}
+	if stdout != "ok" {
+		t.Fatalf("unexpected stdout: %q", stdout)
+	}
+	if stderr != "err1\nerr2" {
+		t.Fatalf("unexpected stderr: %q", stderr)
 	}
 }
 
