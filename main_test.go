@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -105,6 +106,22 @@ func TestProcessTemplate_RepeatsMarkers(t *testing.T) {
 	}
 	if stderr != "err1\nerr2" {
 		t.Fatalf("unexpected stderr: %q", stderr)
+	}
+}
+
+func TestWriteOutput_AppendsNewlineWhenMissing(t *testing.T) {
+	var buf bytes.Buffer
+	writeOutput(&buf, "message")
+	if buf.String() != "message\n" {
+		t.Fatalf("expected message with trailing newline, got %q", buf.String())
+	}
+}
+
+func TestWriteOutput_PreservesExistingNewline(t *testing.T) {
+	var buf bytes.Buffer
+	writeOutput(&buf, "message\n")
+	if buf.String() != "message\n" {
+		t.Fatalf("expected message with single newline, got %q", buf.String())
 	}
 }
 

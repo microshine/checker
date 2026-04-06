@@ -41,10 +41,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 				return 1
 			}
 			if out != "" {
-				_, _ = fmt.Fprint(stdout, out)
+				writeOutput(stdout, out)
 			}
 			if errOut != "" {
-				_, _ = fmt.Fprint(stderr, errOut)
+				writeOutput(stderr, errOut)
 			}
 			return exitCode
 		}
@@ -56,12 +56,19 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	if out != "" {
-		_, _ = fmt.Fprint(stdout, out)
+		writeOutput(stdout, out)
 	}
 	if errOut != "" {
-		_, _ = fmt.Fprint(stderr, errOut)
+		writeOutput(stderr, errOut)
 	}
 	return exitCode
+}
+
+func writeOutput(w io.Writer, out string) {
+	_, _ = fmt.Fprint(w, out)
+	if !strings.HasSuffix(out, "\n") {
+		_, _ = fmt.Fprintln(w)
+	}
 }
 
 func runInit(args []string, stdout, _ io.Writer) error {
